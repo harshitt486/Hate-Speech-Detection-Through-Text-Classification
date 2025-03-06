@@ -1,0 +1,108 @@
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report
+
+# Sample hate speech and non-hate speech text data (replace with your dataset).
+texts = [
+    "I love all races and cultures!",
+    "This message is filled with hatred and discrimination.",
+    "Spread love and positivity!",
+    "Stop spreading hate."
+]
+labels = [0, 1, 0, 0]  # 0 for non-hate speech, 1 for hate speech
+
+# Tokenize the text data.
+vocab = {}
+word_idx = 1
+X = []
+
+for text in texts:
+    tokens = text.lower().split()
+    token_indices = []
+    for token in tokens:
+        if token not in vocab:
+            vocab[token] = word_idx
+            word_idx += 1
+        token_indices.append(vocab[token])
+    X.append(token_indices)
+
+# Pad sequences to a fixed length.
+max_seq_length = max(len(seq) for seq in X)
+X = [seq + [0] * (max_seq_length - len(seq)) for seq in X]
+
+X = torch.tensor(X)
+y = torch.tensor(labels)
+
+# Split the data into training and testing sets.
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Define a simple neural network model.
+class SimpleClassifier(nn.Module):
+    def __init__(self, vocab_size, embedding_dim, hidden_dim):
+        super(SimpleClassifier, self).__init__()
+        self.embedding = nn.Embedding(vocab_size, embedding_dim)
+        self.fc1 = nn.Linear(embedding_dim, hidden_dim)
+        self.fc2 = nn.Linear(hidden_dim, 1)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        embedded = self.embedding(x)
+        pooled = torch.mean(embedded, dim=1)  # Average pooling
+        h = self.fc1(pooled)
+        out = self.fc2(h)
+        return self.sigmoid(out)
+
+# Initialize the model, loss function, and optimizer.
+vocab_size = len(vocab) + 1
+embedding_dim = 16
+hidden_dim = 8
+model = SimpleClassifier(vocab_size, embedding_dim, hidden_dim)
+criterion = nn.BCELoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+# Training loop.
+num_epochs = 10
+for epoch in range(num_epochs):
+    model.train()
+    optimizer.zero_grad()
+    outputs = model(X_train)
+    loss = criterion(outputs.view(-1), y_train.float())
+    loss.backward()
+    optimizer.step()
+
+# Additional evaluation data (for demonstration purposes).
+additional_texts = [
+    "I support equality for all!",
+    "This message promotes unity and tolerance.",
+    "Let's spread kindness and positivity.",
+    "We should combat hate speech together."
+]
+additional_labels = [0, 0, 0, 0]  # 0 for non-hate speech
+
+# Tokenize and preprocess the additional data.
+additional_X = []
+
+for text in additional_texts:
+    tokens = text.lower().split()
+    token_indices = []
+    for token in tokens:
+        if token in vocab:
+            token_indices.append(vocab[token])
+    additional_X.append(token_indices)
+
+# Pad sequences to the same length as the original data.
+additional_X = [seq + [0] * (max_seq_length - len(seq)) for seq in additional_X]
+additional_X = torch.tensor(additional_X)
+additional_y = torch.tensor(additional_labels)
+
+# Evaluate the model with the combined test data.
+model.eval()
+with torch.no_grad():
+    X_combined = torch.cat((X_test, additional_X), dim=0)
+    y_combined = torch.cat((y_test, additional_y), dim=0)
+
+    predictions_combined = model(X_combined).round().squeeze().numpy()
+    print(classification_report(y_combined.numpy(), predictions_combined, target_names=['Non-Hate Speech', 'Hate Speech']))
