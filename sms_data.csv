@@ -1,0 +1,11 @@
+text,label
+"Congratulations, you've won a $1000 prize!",spam
+"Hey, are you free tonight?",ham
+"Click this link to claim your prize!",spam
+"Reminder: Your appointment is tomorrow at 2 PM.",ham
+"Guaranteed to Lose 10 Pounds in 10 Days!",spam
+"Can you pick up some groceries on your way home?",ham
+"URGENT: Your bank account has been compromised. Click here to secure it.",spam
+"Meeting at 4 PM in the conference room.",ham
+"Get a FREE iPhone now! Limited time offer.",spam
+"Are we still on for dinner tonight?",ham
